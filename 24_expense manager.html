@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #141618, #181a1b);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px white;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #0e100f, #0e0f0f);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #0e1110;
+            box-shadow: 0 0 10px rgba(212, 217, 219, 0.2);
+        }
+
+        .expense-form {
+            display: grid;
+            grid-template-columns: 2fr 1fr auto;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #030b22, #060f0d);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(7, 8, 8, 0.3);
+        }
+
+        .expenses-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 25px;
+        }
+
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: #f8f9fa;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            border-left: 5px solid #0c0e0e;
+        }
+
+        .expense-info h4 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .expense-amount {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #e17055;
+        }
+
+        .btn-delete {
+            background: #e17055;
+            color: white;
+            border: none;
+            padding: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .btn-delete:hover {
+            background: #d63031;
+        }
+ 
+        .summary {
+            background: linear-gradient(45deg, #101312, #131515);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .summary h3 {
+            margin-bottom: 15px;
+            font-size: 1.5rem; 
+        }
+
+        .savings {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .savings.positive {
+            color: #09d617;
+        }
+
+        .savings.negative {
+            color: #fdcb6e;
+        }
+
+        @media (max-width: 600px) {
+            .expense-form {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Expense Manager</h1>
+            <p>Track your monthly finances</p>
+        </div>
+
+        <div class="content">
+            <!-- Income Input -->
+            <div class="form-group">
+                <label>Monthly Income</label>
+                <input type="number" class="form-control" id="monthlyIncome" 
+                       placeholder="Enter your monthly income" step="0.01">
+            </div>
+
+            <!-- Expense Form -->
+            <div class="form-group">
+                <label>Add Expense</label>
+                <div class="expense-form">
+                    <input type="text" class="form-control" id="expenseName" placeholder="Expense name">
+                    <input type="number" class="form-control" id="expenseAmount" placeholder="Amount" step="0.01">
+                    <button class="btn" onclick="addExpense()">Add</button>
+                </div>
+            </div>
+
+            <!-- Expenses List -->
+            <div class="expenses-list" id="expensesList">
+                <div style="text-align: center; padding: 40px; color: #888;">
+                    No expenses added yet
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="summary" id="summary">
+                <h3>Financial Summary</h3>
+                <div>Total Expenses: $<span id="totalExpenses">0.00</span></div>
+                <div class="savings" id="savings">0.00</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let income = 0;
+        let expenses = [];
+
+        // Load data on page load
+        window.onload = function() {
+            loadData();
+            updateSummary();
+        };
+
+        // Income input handler
+        document.getElementById('monthlyIncome').addEventListener('input', function() {
+            income = parseFloat(this.value) || 0;
+            saveData();
+            updateSummary();
+        });
+
+        function addExpense() {
+            const name = document.getElementById('expenseName').value.trim();
+            const amount = parseFloat(document.getElementById('expenseAmount').value) || 0;
+
+            if (name && amount > 0) {
+                expenses.push({ name, amount });
+                document.getElementById('expenseName').value = '';
+                document.getElementById('expenseAmount').value = '';
+                renderExpenses();
+                saveData();
+                updateSummary();
+            }
+        }
+
+        function deleteExpense(index) {
+            expenses.splice(index, 1);
+            renderExpenses();
+            saveData();
+            updateSummary();
+        }
+
+        function renderExpenses() {
+            const container = document.getElementById('expensesList');
+            if (expenses.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #888;">No expenses added yet</div>';
+                return;
+            }
+
+            container.innerHTML = expenses.map((expense, index) => `
+                <div class="expense-item">
+                    <div class="expense-info">
+                        <h4>${expense.name}</h4>
+                    </div>
+                    <div>
+                        <span class="expense-amount">$${expense.amount.toFixed(2)}</span>
+                        <button class="btn-delete" onclick="deleteExpense(${index})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateSummary() {
+            const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const savings = income - totalExpenses;
+
+            document.getElementById('totalExpenses').textContent = totalExpenses.toFixed(2);
+            
+            const savingsEl = document.getElementById('savings');
+            savingsEl.textContent = `$${savings.toFixed(2)}`;
+            
+            savingsEl.className = 'savings';
+            if (savings >= 0) {
+                savingsEl.classList.add('positive');
+            } else {
+                savingsEl.classList.add('negative');
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('expenseManager', JSON.stringify({
+                income: income,
+                expenses: expenses
+            }));
+        }
+
+        function loadData() {
+            const data = localStorage.getItem('expenseManager');
+            if (data) {
+                const parsed = JSON.parse(data);
+                income = parsed.income || 0;
+                expenses = parsed.expenses || [];
+                document.getElementById('monthlyIncome').value = income;
+                renderExpenses();
+            }
+        }
+
+        // Enter key to add expense
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const active = document.activeElement;
+                if (active.id === 'expenseName' || active.id === 'expenseAmount') {
+                    addExpense();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
